@@ -1,9 +1,12 @@
 """
 Key Service - Fetches API keys from Supabase admin_api_keys table
-All services should use this to get dynamic API keys
+
+Only manages rate-limited API keys:
+- GEMINI_API_KEY (for skill gap analysis)
+
+Permanent credentials like AWS are read from environment variables only.
 """
 import requests
-from functools import lru_cache
 from datetime import datetime, timedelta
 from app.core.config import settings
 
@@ -57,7 +60,7 @@ def get_api_key(service_name: str, key_name: str, fallback: str = None) -> str:
     Get a specific API key from the database.
     
     Args:
-        service_name: The service name (e.g., 'gemini', 'serp', 'groq')
+        service_name: The service name (e.g., 'gemini')
         key_name: The key name (e.g., 'GEMINI_API_KEY')
         fallback: Fallback value if key not found
         
@@ -70,46 +73,8 @@ def get_api_key(service_name: str, key_name: str, fallback: str = None) -> str:
 
 
 def get_gemini_key(fallback: str = None) -> str:
-    """Get Gemini API key."""
+    """Get Gemini API key (rate-limited, managed via Admin Portal)."""
     return get_api_key("gemini", "GEMINI_API_KEY", fallback)
-
-
-def get_serp_key(fallback: str = None) -> str:
-    """Get SERP API key."""
-    return get_api_key("serp", "SERP_API_KEY", fallback)
-
-
-def get_groq_key(fallback: str = None) -> str:
-    """Get Groq API key."""
-    return get_api_key("groq", "GROQ_API_KEY", fallback)
-
-
-def get_github_client_id(fallback: str = None) -> str:
-    """Get GitHub Client ID."""
-    return get_api_key("github", "GITHUB_CLIENT_ID", fallback)
-
-
-def get_github_client_secret(fallback: str = None) -> str:
-    """Get GitHub Client Secret."""
-    return get_api_key("github", "GITHUB_CLIENT_SECRET", fallback)
-
-
-def get_aws_keys() -> tuple:
-    """Get AWS access key and secret."""
-    access_key = get_api_key("aws", "AWS_ACCESS_KEY_ID")
-    secret_key = get_api_key("aws", "AWS_SECRET_ACCESS_KEY")
-    return access_key, secret_key
-
-
-def get_smtp_config() -> dict:
-    """Get SMTP email configuration."""
-    return {
-        "host": get_api_key("email", "SMTP_HOST"),
-        "port": int(get_api_key("email", "SMTP_PORT") or "587"),
-        "user": get_api_key("email", "SMTP_USER"),
-        "password": get_api_key("email", "SMTP_PASSWORD"),
-        "from_email": get_api_key("email", "FROM_EMAIL")
-    }
 
 
 def clear_cache():
