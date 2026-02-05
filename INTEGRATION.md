@@ -4,7 +4,7 @@
 
 This service provides AI-powered skill gap analysis using **Gemini 2.5 Pro**.
 
-**Production API URL**: *(Will be provided after AWS deployment)*
+**Production API URL**: `https://tku29qrthd.execute-api.us-east-1.amazonaws.com/Prod/`
 
 ---
 
