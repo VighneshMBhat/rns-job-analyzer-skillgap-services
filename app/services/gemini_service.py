@@ -41,12 +41,19 @@ def get_api_key_for_user(user_id: str) -> tuple[str, str]:
     Get API key for user following BYOK policy.
     Returns (api_key, source) where source is 'user' or 'system'
     """
+    from app.services.key_service import get_gemini_key
+    
     # First try user's own key
     user_key = get_user_gemini_key(user_id)
     if user_key:
         return user_key, "user"
     
-    # Fallback to system key
+    # Try dynamic system key from database
+    db_key = get_gemini_key()
+    if db_key:
+        return db_key, "system"
+    
+    # Fallback to environment variable
     if settings.GEMINI_API_KEY:
         return settings.GEMINI_API_KEY, "system"
     
