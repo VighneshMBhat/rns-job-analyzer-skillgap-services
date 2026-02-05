@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Skill Gap Analysis Service - AI-powered skill gap analysis using Gemini
+
+Globals:
+  Function:
+    Timeout: 300  # 5 minutes - for AI processing
+    MemorySize: 1024  # 1GB for faster processing
+
+Parameters:
+  SupabaseUrl:
+    Type: String
+    Description: Supabase project URL
+  SupabaseKey:
+    Type: String
+    Description: Supabase anon key
+  SupabaseServiceRoleKey:
+    Type: String
+    Description: Supabase service role key
+    NoEcho: true
+  GeminiApiKey:
+    Type: String
+    Description: Gemini API key (fallback)
+    NoEcho: true
+  AwsS3Bucket:
+    Type: String
+    Description: S3 bucket for PDF reports
+    Default: skillgap-reports
+
+Resources:
+  SkillGapServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: app.main.handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          SUPABASE_URL: !Ref SupabaseUrl
+          SUPABASE_KEY: !Ref SupabaseKey
+          SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
+          GEMINI_API_KEY: !Ref GeminiApiKey
+          GEMINI_MODEL: gemini-2.5-pro-preview-05-06
+          AWS_S3_BUCKET: !Ref AwsS3Bucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref AwsS3Bucket
+      Events:
+        ApiRoot:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
+            RestApiId: !Ref SkillGapServiceApi
+        ApiProxy:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId: !Ref SkillGapServiceApi
+
+  SkillGapServiceApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  # S3 Bucket for PDF reports
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'skillgap-reports-${AWS::AccountId}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3600
+
+Outputs:
+  SkillGapServiceApi:
+    Description: "API Gateway endpoint URL for Skill Gap Service"
+    Value: !Sub "https://${SkillGapServiceApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  SkillGapServiceFunction:
+    Description: "Skill Gap Service Lambda Function ARN"
+    Value: !GetAtt SkillGapServiceFunction.Arn
+  ReportsBucket:
+    Description: "S3 Bucket for PDF reports"
+    Value: !Ref ReportsBucket
