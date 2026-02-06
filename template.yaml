@@ -46,11 +46,11 @@ Resources:
           SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
           # Dynamic key fetched from database, this is fallback
           GEMINI_API_KEY: !Ref GeminiApiKey
-          GEMINI_MODEL: gemini-2.5-pro-preview-05-06
-          AWS_S3_BUCKET: !Ref AwsS3Bucket
+          GEMINI_MODEL: gemini-1.5-pro
+          AWS_S3_BUCKET: !Ref ReportsBucket
       Policies:
         - S3CrudPolicy:
-            BucketName: !Ref AwsS3Bucket
+            BucketName: !Ref ReportsBucket
       Events:
         ApiRoot:
           Type: Api

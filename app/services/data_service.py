@@ -208,3 +208,57 @@ def save_user_api_key(user_id: str, api_key: str) -> dict:
         url = f"{SUPABASE_REST_URL}/user_api_keys"
         requests.post(url, headers=HEADERS, json=key_data, timeout=10)
         return {"status": "created", "prefix": key_prefix}
+
+
+def check_if_analysis_needed(user_id: str) -> bool:
+    """
+    Check if user needs analysis based on last activity.
+    Returns True if:
+    1. No previous analysis
+    2. Resume uploaded AFTER last analysis
+    3. GitHub synced AFTER last analysis
+    """
+    try:
+        # 1. Get last analysis time
+        url = f"{SUPABASE_REST_URL}/skill_gap_analyses?user_id=eq.{user_id}&select=analyzed_at&order=analyzed_at.desc&limit=1"
+        resp = requests.get(url, headers=HEADERS, timeout=5)
+        last_analysis = None
+        if resp.status_code == 200 and resp.json():
+            last_analysis = resp.json()[0]['analyzed_at']
+        
+        if not last_analysis:
+            return True # Never analyzed
+
+        # Convert to datetime (if string)
+        # Handle formats efficiently
+        if isinstance(last_analysis, str):
+            last_analysis_dt = datetime.fromisoformat(last_analysis.replace('Z', '+00:00'))
+        else:
+            return True
+
+        # 2. Get Profile (Resume upload)
+        profile_url = f"{SUPABASE_REST_URL}/profiles?id=eq.{user_id}&select=resume_uploaded_at"
+        p_resp = requests.get(profile_url, headers=HEADERS, timeout=5)
+        if p_resp.status_code == 200 and p_resp.json():
+            resume_uploaded = p_resp.json()[0].get('resume_uploaded_at')
+            if resume_uploaded:
+                resume_dt = datetime.fromisoformat(resume_uploaded.replace('Z', '+00:00'))
+                if resume_dt > last_analysis_dt:
+                    print(f"User {user_id}: New resume detected ({resume_dt}) > Last Analysis ({last_analysis_dt})")
+                    return True
+
+        # 3. Get GitHub Connection (Last Sync)
+        gh_url = f"{SUPABASE_REST_URL}/github_connections?user_id=eq.{user_id}&select=last_sync_at"
+        gh_resp = requests.get(gh_url, headers=HEADERS, timeout=5)
+        if gh_resp.status_code == 200 and gh_resp.json():
+            last_sync = gh_resp.json()[0].get('last_sync_at')
+            if last_sync:
+                sync_dt = datetime.fromisoformat(last_sync.replace('Z', '+00:00'))
+                if sync_dt > last_analysis_dt:
+                    print(f"User {user_id}: New GitHub sync detected ({sync_dt}) > Last Analysis ({last_analysis_dt})")
+                    return True
+        
+        return False
+    except Exception as e:
+        print(f"Error checking analysis need for {user_id}: {e}")
+        return True # Fail safe: run it

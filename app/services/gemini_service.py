@@ -83,7 +83,8 @@ def analyze_skill_gap(
     model = genai.GenerativeModel(settings.GEMINI_MODEL)
     
     # Prepare the analysis prompt
-    prompt = f"""You are an expert career advisor and technical skills analyst. Analyze the following data and provide a comprehensive skill gap analysis report.
+    prompt = f"""You are Gemini 2.5 Pro (Deep Thinking Model), an expert career advisor and technical skills analyst. 
+    Using your advanced deep thinking capabilities, analyze the following data and provide a comprehensive skill gap analysis report.
 
 ## User Profile
 - Name: {user_name}
@@ -91,6 +92,9 @@ def analyze_skill_gap(
 - Target Roles: {', '.join(preferred_roles)}
 
 ## User's Current Skills (from Resume & GitHub Projects)
+    NOTE: 'proficiency_level' indicates the number of unique projects/resumes where this skill was utilized. 
+    High proficiency (e.g., >2) indicates repetitive usage and stronger expertise. 
+    Treat high proficiency counts as evidence of deep experience and validated skills.
 {json.dumps(user_skills, indent=2)}
 
 ## Current Market Trends (from Job Listings)

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Gemini AI (Fallback key - used when user's key limit exceeded)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-pro-preview-05-06"
+    GEMINI_MODEL: str = "gemini-1.5-pro"
     
     # AWS S3 for PDF storage
     AWS_ACCESS_KEY_ID: str = ""

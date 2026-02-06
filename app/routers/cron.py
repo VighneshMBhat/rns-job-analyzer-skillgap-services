@@ -10,7 +10,8 @@ from app.services.data_service import (
     get_skill_trends,
     get_recent_discussions,
     store_analysis_result,
-    store_report_record
+    store_report_record,
+    check_if_analysis_needed
 )
 from app.services.gemini_service import analyze_skill_gap
 from app.services.pdf_service import generate_pdf_report, upload_to_supabase_storage
@@ -49,6 +50,15 @@ def run_weekly_analysis():
         user_email = user.get("email", "")
         
         try:
+            # Check if analysis is needed (Smart Cron)
+            if not check_if_analysis_needed(user_id):
+                results.append({
+                    "user_id": user_id,
+                    "status": "skipped",
+                    "reason": "No new data (Resume/GitHub unchanged)"
+                })
+                continue
+
             # Get user-specific data
             preferred_roles = get_user_preferred_roles(user_id)
             if not preferred_roles:
